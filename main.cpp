@@ -6,6 +6,47 @@
 
 using namespace std;
 
+int parse_args(int &i_p, int &f_p, int &s_p, int &e_p, string &interface, string &fl, string &str, string &expr, char*argv[],int argc)
+{
+	i_p = f_p = s_p = e_p = 0;
+        int nextarg = _EXPRESSION;
+        string stri = "-i";
+        string strr = "-r";
+        string strs = "-s";
+        for(int i = 1; i<argc;i++) {
+                if(stri.compare(argv[i]) == 0) {
+                        nextarg = _INTERFACE;
+                }
+                else if (strr.compare(argv[i]) == 0) {
+                        nextarg = _FILE;
+                }
+                else if (strs.compare(argv[i]) == 0) {
+                        nextarg = _STRING;
+                }
+                else {
+                        nextarg = _EXPRESSION;
+                }
+
+                if(nextarg == _INTERFACE) {
+                        interface = argv[++i];
+                        i_p = 1;
+                }
+                else if (nextarg == _FILE) {
+                        fl = argv[++i];
+                        f_p = 1;
+                }
+                else if (nextarg == _STRING) {
+                        str = argv[++i];
+                        s_p = 1;
+                }
+                else {
+                        expr = argv[i];
+                        e_p = 1;
+                }
+        }
+	return 1;
+}
+
 int main(int argc, char *argv[])
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
