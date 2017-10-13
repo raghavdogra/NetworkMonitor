@@ -81,6 +81,20 @@ void payload_print(const char * payload, int size) {
 	return;
 }				
 
+void print_timestamp(const struct pcap_pkthdr * header) {
+
+	struct timeval timev;
+	timev = header->ts;
+	time_t currtime;
+	struct tm * currt;
+	
+	currtime = timev.tv_sec;
+	currt = localtime(&currtime);
+	char tmpbuf[64], buf[64];
+	strftime(tmpbuf,sizeof(tmpbuf), "%Y-%m-%d %H:%M:%S",currt);
+	snprintf(buf, sizeof(buf), "%s.%06d", tmpbuf, (int)timev.tv_usec);
+	printf("\n%s",buf);
+}
 
 void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
@@ -100,11 +114,13 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	void * proto;	
 	printf("\nPacket number %d:\n", count);
 	count++;
+
+	print_timestamp(header);
 	
 	/* define ethernet header */
 	ethernet = (struct sniff_ethernet*)(packet);
 	/* print source and destination MAC address */
-	cout << ether_ntoa((struct ether_addr *) ethernet->ether_shost)  << " -> ";
+	cout <<"   " << ether_ntoa((struct ether_addr *) ethernet->ether_shost)  << " -> ";
 	cout << ether_ntoa((struct ether_addr *) ethernet->ether_dhost);
 
 	/* print type */
@@ -168,6 +184,9 @@ int main(int argc, char *argv[])
 	int i_p, f_p, s_p, e_p; //presence of -i,-f,-s or expression
 	parse_args(i_p,f_p,s_p,e_p,interface,fl,str,expr,argv,argc);
 
+
+		
+
 	if(i_p == 1) {
 		cout << interface <<endl;
 		dev = interface.c_str();
@@ -191,25 +210,29 @@ int main(int argc, char *argv[])
 		//char *dev;			/* The device to sniff on */
 		//char errbuf[PCAP_ERRBUF_SIZE];	/* Error string */
 		struct bpf_program fp;		/* The compiled filter */
-		char filter_exp[] = "";	/* The filter expression */
+		const char *filter_exp =  expr.c_str();	/* The filter expression */
 		bpf_u_int32 mask;		/* Our netmask */
 		bpf_u_int32 net;		/* Our IP */
 		struct pcap_pkthdr header;	/* The header that pcap gives us */
 		const u_char *packet;		/* The actual packet */
 
-		/* Define the device */
-		/* Find the properties for the device */
-		if (pcap_lookupnet(dev, &net, &mask, errbuf) == -1) {
-			fprintf(stderr, "Couldn't get netmask for device %s: %s\n", dev, errbuf);
-			net = 0;
-			mask = 0;
+
+	if(f_p == 1) {
+		handle = pcap_open_offline(fl.c_str(),errbuf);
+		if (handle == NULL) {
+			fprintf(stderr, "Couldn't file device %s: %s\n",fl.c_str() , errbuf);
+			return(2);
 		}
-		/* Open the session in promiscuous mode */
+	} 
+	else {
 		handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
 		if (handle == NULL) {
 			fprintf(stderr, "Couldn't open device %s: %s\n", dev, errbuf);
 			return(2);
-		}
+		}	
+	}
+
+
 		/* Compile and apply the filter */
 		if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) {
 			fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
