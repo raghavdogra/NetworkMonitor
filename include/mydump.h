@@ -12,7 +12,6 @@
 #include <arpa/inet.h>
 
 
-
 #define _INTERFACE	1
 #define _FILE		2
 #define _STRING		3
@@ -28,7 +27,7 @@
 //#define ETHER_ADDR_LEN	6
 
 
-
+bool printable(const char * payload, int size);
 void payload_print(const char * payload, int size);
 void print_ascii (const u_char * start, int size);
 void tcp_handler (const struct sniff_tcp* tcp, const struct sniff_ip *ip);

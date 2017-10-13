@@ -3,8 +3,11 @@
 #include <iostream>
 #include <string>
 #include <mydump.h>
+#include <sstream>
+
 
 using namespace std;
+extern ostringstream stream;
 
 void tcp_handler (const struct sniff_tcp* tcp, const struct sniff_ip *ip) {
         int size_tcp = TH_OFF(tcp)*4;
@@ -12,11 +15,11 @@ void tcp_handler (const struct sniff_tcp* tcp, const struct sniff_ip *ip) {
                 printf("   * Invalid TCP header length: %u bytes\n", size_tcp);
                 return;
         }
-        cout << inet_ntoa(ip->ip_src);
-	cout << ":"<< ntohs(tcp->th_sport);
-	cout << " -> ";
-        cout << inet_ntoa(ip->ip_dst) ;
-	cout << ":" << ntohs(tcp->th_dport) << endl;
+        stream << inet_ntoa(ip->ip_src);
+	stream << ":"<< ntohs(tcp->th_sport);
+	stream << " -> ";
+        stream << inet_ntoa(ip->ip_dst) ;
+	stream << ":" << ntohs(tcp->th_dport) << endl;
 
        // printf("   Src port: %d\n", ntohs(tcp->th_sport));
        // printf("   Dst port: %d\n", ntohs(tcp->th_dport));
@@ -36,7 +39,9 @@ void tcp_handler (const struct sniff_tcp* tcp, const struct sniff_ip *ip) {
          * Print payload data; it might be binary, so don't just
          * treat it as a string.
          */
-        if (size_payload > 0) {
+        if (size_payload > 0 && printable(payload, size_payload)) {
+		string result = stream.str();
+		cout << result;
                 printf("   Payload (%d bytes):\n", size_payload);
                 payload_print(payload, size_payload);
         }
@@ -46,18 +51,20 @@ void tcp_handler (const struct sniff_tcp* tcp, const struct sniff_ip *ip) {
 void udp_handler (const struct udphdr* udp, const struct sniff_ip *ip) {
 	int size_udp1 = sizeof(struct udphdr);
 	int size_udp2 = sizeof(udp);
-	cout << size_udp1 << " " << size_udp2 << endl;
+	stream << size_udp1 << " " << size_udp2 << endl;
         const char *payload = (char *)((char *)udp + size_udp1);
 	
-        cout << inet_ntoa(ip->ip_src);
-	cout << ":" << ntohs(udp->uh_sport);
-	cout << " -> ";
-        cout << inet_ntoa(ip->ip_dst) ;
-	cout << ":" << ntohs(udp->uh_dport) << endl;
+        stream << inet_ntoa(ip->ip_src);
+	stream << ":" << ntohs(udp->uh_sport);
+	stream << " -> ";
+        stream << inet_ntoa(ip->ip_dst) ;
+	stream << ":" << ntohs(udp->uh_dport) << endl;
 
 	int size_ip = IP_HL(ip)*4;
         int size_payload = ntohs(ip->ip_len) - (size_ip + size_udp1);
-        if (size_payload > 0) {
+        if (size_payload > 0 && printable(payload, size_payload)) {
+		string result = stream.str();
+		cout << result;
                 printf("   Payload (%d bytes):\n", size_payload);
                 payload_print(payload, size_payload);
         }
@@ -67,18 +74,20 @@ void udp_handler (const struct udphdr* udp, const struct sniff_ip *ip) {
 void icmp_handler (const struct icmphdr* icmp, const struct sniff_ip *ip) {
 	int size_icmp1 = sizeof(struct icmphdr);
 	int size_icmp2 = sizeof(icmp);
-	cout << size_icmp1 << " " << size_icmp2 << endl;
+	stream << size_icmp1 << " " << size_icmp2 << endl;
         const char *payload = (char *)((char *)icmp + size_icmp1);
 	
-        cout << inet_ntoa(ip->ip_src);
-	//cout << ":" ntohs(tcp->th_sport);
-	cout << " -> ";
-        cout << inet_ntoa(ip->ip_dst) <<endl;
-	//cout << ":" ntohs(tcp->th_dport);
+        stream << inet_ntoa(ip->ip_src);
+	//stream << ":" ntohs(tcp->th_sport);
+	stream << " -> ";
+        stream << inet_ntoa(ip->ip_dst) <<endl;
+	//stream << ":" ntohs(tcp->th_dport);
 
 	int size_ip = IP_HL(ip)*4;
         int size_payload = ntohs(ip->ip_len) - (size_ip + size_icmp1);
-        if (size_payload > 0) {
+        if (size_payload > 0 && printable(payload, size_payload)) {
+		string result = stream.str();
+		cout << result;
                 printf("   Payload (%d bytes):\n", size_payload);
                 payload_print(payload, size_payload);
         }

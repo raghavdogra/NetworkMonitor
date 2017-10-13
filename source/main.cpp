@@ -3,8 +3,13 @@
 #include <iostream>
 #include <string>
 #include <mydump.h>
+#include <sstream>
 
 using namespace std;
+
+int s_p;
+string str;
+ostringstream stream;
 
 int parse_args(int &i_p, int &f_p, int &s_p, int &e_p, string &interface, string &fl, string &str, string &expr, char*argv[],int argc)
 {
@@ -81,6 +86,28 @@ void payload_print(const char * payload, int size) {
 	return;
 }				
 
+bool printable(const char * payload, int size) {
+	if(s_p!=1)
+		return true;
+	string strbuf ="";
+	const u_char * start = (const u_char *) payload;
+	int i = 0;
+//	int linesize = 16;
+//	int linecursor = 0;
+	for(i=0;i<size;i++) {
+		char c = *(start+i);
+                if (isprint(*(start+i)))
+                        strbuf = strbuf+ c;
+                else
+                        strbuf = strbuf + ".";
+	}
+
+	if(strstr(strbuf.c_str(),str.c_str()))
+		return true;
+	else
+		return false;
+}
+				
 void print_timestamp(const struct pcap_pkthdr * header) {
 
 	struct timeval timev;
@@ -93,11 +120,12 @@ void print_timestamp(const struct pcap_pkthdr * header) {
 	char tmpbuf[64], buf[64];
 	strftime(tmpbuf,sizeof(tmpbuf), "%Y-%m-%d %H:%M:%S",currt);
 	snprintf(buf, sizeof(buf), "%s.%06d", tmpbuf, (int)timev.tv_usec);
-	printf("\n%s",buf);
+	stream << buf;
 }
 
 void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
+	stream.str("");
 	static int count = 1;                   /* packet counter */
 	
 	/* declare pointers to packet headers */
@@ -112,7 +140,9 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 
 	const struct udphdr * udp;
 	void * proto;	
-	printf("\nPacket number %d:\n", count);
+	stream << "\nPacket number ";
+	stream <<dec<< count;
+	stream << ":\n";
 	count++;
 
 	print_timestamp(header);
@@ -120,17 +150,19 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	/* define ethernet header */
 	ethernet = (struct sniff_ethernet*)(packet);
 	/* print source and destination MAC address */
-	cout <<"   " << ether_ntoa((struct ether_addr *) ethernet->ether_shost)  << " -> ";
-	cout << ether_ntoa((struct ether_addr *) ethernet->ether_dhost);
+	stream <<"   " << ether_ntoa((struct ether_addr *) ethernet->ether_shost)  << " -> ";
+	stream << ether_ntoa((struct ether_addr *) ethernet->ether_dhost);
 
 	/* print type */
-	//cout << ethernet->ether_type << " type " << hex << (bpf_u_int32) ethernet->ether_type;
+	//stream << ethernet->ether_type << " type " << hex << (bpf_u_int32) ethernet->ether_type;
 	//int type = ethernet->ether_type;
-	printf(" type 0x%x ",ntohs( ethernet->ether_type));
-	
+	//printf(" type 0x%x ",ntohs( ethernet->ether_type));
+	stream << " type 0x" << hex << ntohs( ethernet->ether_type) << " ";
+
 	/* print len */
-	printf(" len %d\n",header->len);
-	//cout << " len " << header->len <<endl;
+	stream << " len " << dec<< header->len;
+	//printf(" len %d\n",header->len);
+	//stream << " len " << header->len <<endl;
 
 	/* define/compute ip header offset */
 	ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
@@ -140,8 +172,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 		return;
 	}
 
-	cout << inet_ntoa(ip->ip_src) << " -> ";
-	cout << inet_ntoa(ip->ip_dst) ;
+	stream << inet_ntoa(ip->ip_src) << " -> ";
+	stream << inet_ntoa(ip->ip_dst) ;
 
 	/* print source and destination IP addresses */
 //	printf("       From: %s\n", inet_ntoa(ip->ip_src));
@@ -150,38 +182,37 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	/* determine protocol */	
 	switch(ip->ip_p) {
 		case IPPROTO_TCP:
-			printf(" TCP\n");
+	//		printf(" TCP\n");
 			proto = (void *)(packet + SIZE_ETHERNET + size_ip);
 			tcp_handler((struct sniff_tcp*)proto,ip);
 			break;
 		case IPPROTO_UDP:
-			printf(" UDP\n");
+	//		printf(" UDP\n");
 			proto = (void*)(packet + SIZE_ETHERNET + size_ip);
 			udp_handler((struct udphdr*)proto,ip);
 			break;
 		case IPPROTO_ICMP:
-			printf(" ICMP\n");
+	//		printf(" ICMP\n");
 			proto = (void *)(packet + SIZE_ETHERNET + size_ip);
 			icmp_handler((struct icmphdr*)proto,ip);
 			break;
 			;
 		case IPPROTO_IP:
-			printf(" IP\n");
+	//		printf(" IP\n");
 			return;
 		default:
-			printf(" unknown\n");
+	//		printf(" unknown\n");
 			return;
 	}
 return;
 }
-
 int main(int argc, char *argv[])
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 	const char * dev;
-	string interface, fl, str, expr;
+	string interface, fl, expr;
 
-	int i_p, f_p, s_p, e_p; //presence of -i,-f,-s or expression
+	int i_p, f_p, e_p; //presence of -i,-f,-s or expression
 	parse_args(i_p,f_p,s_p,e_p,interface,fl,str,expr,argv,argc);
 
 
@@ -206,15 +237,15 @@ int main(int argc, char *argv[])
 	if(e_p == 1)
 		cout << expr << endl;	
 
-		pcap_t *handle;			/* Session handle */
-		//char *dev;			/* The device to sniff on */
-		//char errbuf[PCAP_ERRBUF_SIZE];	/* Error string */
-		struct bpf_program fp;		/* The compiled filter */
-		const char *filter_exp =  expr.c_str();	/* The filter expression */
-		bpf_u_int32 mask;		/* Our netmask */
-		bpf_u_int32 net;		/* Our IP */
-		struct pcap_pkthdr header;	/* The header that pcap gives us */
-		const u_char *packet;		/* The actual packet */
+	pcap_t *handle;			/* Session handle */
+	//char *dev;			/* The device to sniff on */
+	//char errbuf[PCAP_ERRBUF_SIZE];	/* Error string */
+	struct bpf_program fp;		/* The compiled filter */
+	const char *filter_exp =  expr.c_str();	/* The filter expression */
+	bpf_u_int32 mask;		/* Our netmask */
+	bpf_u_int32 net;		/* Our IP */
+	struct pcap_pkthdr header;	/* The header that pcap gives us */
+	const u_char *packet;		/* The actual packet */
 
 
 	if(f_p == 1) {
