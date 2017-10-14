@@ -43,7 +43,6 @@ void tcp_handler (const struct sniff_tcp* tcp, const struct sniff_ip *ip) {
         if (size_payload > 0 && printable(payload, size_payload)) {
 		string result = stream.str();
 		cout << result;
-                printf("   Payload (%d bytes):\n", size_payload);
                 payload_print(payload, size_payload);
         }
 	return;
@@ -66,7 +65,6 @@ void udp_handler (const struct udphdr* udp, const struct sniff_ip *ip) {
         if (size_payload > 0 && printable(payload, size_payload)) {
 		string result = stream.str();
 		cout << result;
-                printf("   Payload (%d bytes):\n", size_payload);
                 payload_print(payload, size_payload);
         }
 	return;
@@ -89,7 +87,6 @@ void icmp_handler (const struct icmphdr* icmp, const struct sniff_ip *ip) {
         if (size_payload > 0 && printable(payload, size_payload)) {
 		string result = stream.str();
 		cout << result;
-                printf("   Payload (%d bytes):\n", size_payload);
                 payload_print(payload, size_payload);
         }
 	return;
@@ -110,7 +107,6 @@ void other_handler (const struct sniff_ip *ip, int len) {
         if (size_payload > 0 && printable(payload, size_payload)) {
 		string result = stream.str();
 		cout << result;
-                printf("   Payload (%d bytes):\n", size_payload);
                 payload_print(payload, size_payload);
         }
 	return;

@@ -138,9 +138,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 
 	const struct udphdr * udp;
 	void * proto;	
-	stream << "\nPacket number ";
-	stream <<dec<< count;
-	stream << ":\n";
+	stream << "\n";
 	count++;
 
 	print_timestamp(header);
@@ -159,6 +157,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 
 	/* define/compute ip header offset */
 	ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
+	size_ip = IP_HL(ip)*4;
 
 	/* determine protocol */	
 	switch(ip->ip_p) {
@@ -181,6 +180,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	}
 return;
 }
+
+
 int main(int argc, char *argv[])
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
@@ -205,12 +206,6 @@ int main(int argc, char *argv[])
 		}
 		cout << dev <<endl;
 	}
-	if(f_p == 1)
-		cout << fl <<endl;	
-	if(s_p == 1)
-		cout << str <<endl;	
-	if(e_p == 1)
-		cout << expr << endl;	
 
 	pcap_t *handle;			/* Session handle */
 	struct bpf_program fp;		/* The compiled filter */
