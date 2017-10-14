@@ -92,8 +92,6 @@ bool printable(const char * payload, int size) {
 	string strbuf ="";
 	const u_char * start = (const u_char *) payload;
 	int i = 0;
-//	int linesize = 16;
-//	int linecursor = 0;
 	for(i=0;i<size;i++) {
 		char c = *(start+i);
                 if (isprint(*(start+i)))
@@ -154,52 +152,31 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	stream << ether_ntoa((struct ether_addr *) ethernet->ether_dhost);
 
 	/* print type */
-	//stream << ethernet->ether_type << " type " << hex << (bpf_u_int32) ethernet->ether_type;
-	//int type = ethernet->ether_type;
-	//printf(" type 0x%x ",ntohs( ethernet->ether_type));
 	stream << " type 0x" << hex << ntohs( ethernet->ether_type) << " ";
 
 	/* print len */
 	stream << " len " << dec<< header->len <<endl;
-	//printf(" len %d\n",header->len);
-	//stream << " len " << header->len <<endl;
 
 	/* define/compute ip header offset */
 	ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
-	size_ip = IP_HL(ip)*4;
-//	if (size_ip < 20) {
-//		printf("   * Invalid IP header length: %u bytes\n", size_ip);
-//		return;
-//	}
 
-//	stream << inet_ntoa(ip->ip_src) << " -> ";
-//	stream << inet_ntoa(ip->ip_dst) ;
-
-	/* print source and destination IP addresses */
-//	printf("       From: %s\n", inet_ntoa(ip->ip_src));
-//	printf("         To: %s\n", inet_ntoa(ip->ip_dst));
-	
 	/* determine protocol */	
 	switch(ip->ip_p) {
 		case IPPROTO_TCP:
-	//		printf(" TCP\n");
 			proto = (void *)(packet + SIZE_ETHERNET + size_ip);
 			tcp_handler((struct sniff_tcp*)proto,ip);
 			break;
 		case IPPROTO_UDP:
-	//		printf(" UDP\n");
 			proto = (void*)(packet + SIZE_ETHERNET + size_ip);
 			udp_handler((struct udphdr*)proto,ip);
 			break;
 		case IPPROTO_ICMP:
-	//		printf(" ICMP\n");
 			proto = (void *)(packet + SIZE_ETHERNET + size_ip);
 			icmp_handler((struct icmphdr*)proto,ip);
 			break;
 			;
 		default:
 			other_handler(ip,header->len);
-	//		printf(" unknown\n");
 			return;
 	}
 return;
@@ -236,8 +213,6 @@ int main(int argc, char *argv[])
 		cout << expr << endl;	
 
 	pcap_t *handle;			/* Session handle */
-	//char *dev;			/* The device to sniff on */
-	//char errbuf[PCAP_ERRBUF_SIZE];	/* Error string */
 	struct bpf_program fp;		/* The compiled filter */
 	const char *filter_exp =  expr.c_str();	/* The filter expression */
 	bpf_u_int32 mask;		/* Our netmask */
@@ -262,22 +237,22 @@ int main(int argc, char *argv[])
 	}
 
 
-		/* Compile and apply the filter */
-		if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) {
-			fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
-			return(2);
-		}
-		if (pcap_setfilter(handle, &fp) == -1) {
-			fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
-			return(2);
-		}
-		/* Grab all the packets */
-		pcap_loop(handle, -1, got_packet, NULL);;
-		/* Print its length */
-		printf("Jacked a packet with length of [%d]\n", header.len);
-		/* And close the session */
-		pcap_close(handle);
-		return(0);
+	/* Compile and apply the filter */
+	if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) {
+		fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
+		return(2);
+	}
+	if (pcap_setfilter(handle, &fp) == -1) {
+		fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
+		return(2);
+	}
+	/* Grab all the packets */
+	pcap_loop(handle, -1, got_packet, NULL);;
+	/* Print its length */
+	printf("Jacked a packet with length of [%d]\n", header.len);
+	/* And close the session */
+	pcap_close(handle);
+	return(0);
 
 	return(0);
 }
