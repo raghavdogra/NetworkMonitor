@@ -204,7 +204,6 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Couldn't find default device: %s\n", errbuf);
 			return(2);
 		}
-		cout << dev <<endl;
 	}
 
 	pcap_t *handle;			/* Session handle */
