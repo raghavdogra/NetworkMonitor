@@ -11,6 +11,16 @@ int s_p;
 string str;
 ostringstream stream;
 
+char *ether_ntoa_rz(const struct ether_addr *addr, char *buf)
+{
+    sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x",
+            addr->ether_addr_octet[0], addr->ether_addr_octet[1],
+            addr->ether_addr_octet[2], addr->ether_addr_octet[3],
+            addr->ether_addr_octet[4], addr->ether_addr_octet[5]);
+    return buf;
+}
+
+
 int parse_args(int &i_p, int &f_p, int &s_p, int &e_p, string &interface, string &fl, string &str, string &expr, char*argv[],int argc)
 {
 	i_p = f_p = s_p = e_p = 0;
@@ -136,6 +146,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	int size_tcp;
 	int size_payload;
 
+	char hexbuf[18];
+
 	const struct udphdr * udp;
 	void * proto;	
 	stream << "\n";
@@ -146,8 +158,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	/* define ethernet header */
 	ethernet = (struct sniff_ethernet*)(packet);
 	/* print source and destination MAC address */
-	stream <<"  " << ether_ntoa((struct ether_addr *) ethernet->ether_shost)  << " -> ";
-	stream << ether_ntoa((struct ether_addr *) ethernet->ether_dhost);
+	stream <<"  " << ether_ntoa_rz((struct ether_addr *) ethernet->ether_shost,hexbuf)  << " -> ";
+	stream << ether_ntoa_rz((struct ether_addr *) ethernet->ether_dhost,hexbuf);
 
 	/* print type */
 	stream << " type 0x" << hex << ntohs( ethernet->ether_type) << " ";
@@ -246,7 +258,6 @@ int main(int argc, char *argv[])
 	printf("Jacked a packet with length of [%d]\n", header.len);
 	/* And close the session */
 	pcap_close(handle);
-	return(0);
 
 	return(0);
 }
