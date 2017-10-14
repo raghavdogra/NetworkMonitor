@@ -45,7 +45,7 @@ int parse_args(int &i_p, int &f_p, int &s_p, int &e_p, string &interface, string
                         s_p = 1;
                 }
                 else {
-                        expr = argv[i];
+                        expr = expr + " " + argv[i];
                         e_p = 1;
                 }
         }
