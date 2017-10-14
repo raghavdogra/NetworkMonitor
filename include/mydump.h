@@ -33,6 +33,7 @@ void print_ascii (const u_char * start, int size);
 void tcp_handler (const struct sniff_tcp* tcp, const struct sniff_ip *ip);
 void udp_handler (const struct udphdr* udp, const struct sniff_ip *ip);
 void icmp_handler (const struct icmphdr* icmp, const struct sniff_ip *ip);
+void other_handler (const struct sniff_ip *ip, int len);
 
 struct udphdr {
 	u_short	uh_sport;		/* source port */
@@ -45,6 +46,7 @@ struct udphdr {
             u_char  icmp_type;              /* type of message, see below */
             u_char  icmp_code;              /* type sub code */
             u_short icmp_cksum;             /* ones complement cksum of struct */
+	    uint32_t roh;
     };
 
 	/* Ethernet header */

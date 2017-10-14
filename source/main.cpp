@@ -150,7 +150,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	/* define ethernet header */
 	ethernet = (struct sniff_ethernet*)(packet);
 	/* print source and destination MAC address */
-	stream <<"   " << ether_ntoa((struct ether_addr *) ethernet->ether_shost)  << " -> ";
+	stream <<"  " << ether_ntoa((struct ether_addr *) ethernet->ether_shost)  << " -> ";
 	stream << ether_ntoa((struct ether_addr *) ethernet->ether_dhost);
 
 	/* print type */
@@ -160,20 +160,20 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	stream << " type 0x" << hex << ntohs( ethernet->ether_type) << " ";
 
 	/* print len */
-	stream << " len " << dec<< header->len;
+	stream << " len " << dec<< header->len <<endl;
 	//printf(" len %d\n",header->len);
 	//stream << " len " << header->len <<endl;
 
 	/* define/compute ip header offset */
 	ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
 	size_ip = IP_HL(ip)*4;
-	if (size_ip < 20) {
-		printf("   * Invalid IP header length: %u bytes\n", size_ip);
-		return;
-	}
+//	if (size_ip < 20) {
+//		printf("   * Invalid IP header length: %u bytes\n", size_ip);
+//		return;
+//	}
 
-	stream << inet_ntoa(ip->ip_src) << " -> ";
-	stream << inet_ntoa(ip->ip_dst) ;
+//	stream << inet_ntoa(ip->ip_src) << " -> ";
+//	stream << inet_ntoa(ip->ip_dst) ;
 
 	/* print source and destination IP addresses */
 //	printf("       From: %s\n", inet_ntoa(ip->ip_src));
@@ -197,10 +197,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 			icmp_handler((struct icmphdr*)proto,ip);
 			break;
 			;
-		case IPPROTO_IP:
-	//		printf(" IP\n");
-			return;
 		default:
+			other_handler(ip,header->len);
 	//		printf(" unknown\n");
 			return;
 	}
@@ -210,7 +208,7 @@ int main(int argc, char *argv[])
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 	const char * dev;
-	string interface, fl, expr;
+	string interface, fl, expr="";
 
 	int i_p, f_p, e_p; //presence of -i,-f,-s or expression
 	parse_args(i_p,f_p,s_p,e_p,interface,fl,str,expr,argv,argc);
